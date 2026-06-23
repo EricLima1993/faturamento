@@ -1,0 +1,48 @@
+package io.github.ericlima1993.icompras.faturamento.service;
+
+import io.github.ericlima1993.icompras.faturamento.bucket.BucketFile;
+import io.github.ericlima1993.icompras.faturamento.config.props.MinioProps;
+import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
+import io.minio.http.Method;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.concurrent.TimeUnit;
+
+@Service
+@RequiredArgsConstructor
+public class BucketService {
+
+    private final MinioClient minioClient;
+    private final MinioProps minioProps;
+
+    public void upload(BucketFile bucketFile) {
+        try{
+            var object = PutObjectArgs.builder()
+                    .bucket(minioProps.getBucketName())
+                    .object(bucketFile.name())
+                    .stream(bucketFile.is(), bucketFile.size(), -1)
+                    .contentType(bucketFile.type().toString())
+                    .build();
+            minioClient.putObject(object);
+        }catch(Exception e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String getUrl(String fileName){
+        try{
+            var object = GetPresignedObjectUrlArgs.builder()
+                    .method(Method.GET)
+                    .bucket(minioProps.getBucketName())
+                    .object(fileName)
+                    .expiry(1, TimeUnit.HOURS)
+                    .build();
+            return minioClient.getPresignedObjectUrl(object);
+        }catch(Exception e){
+            throw new RuntimeException(e);
+        }
+    }
+}
