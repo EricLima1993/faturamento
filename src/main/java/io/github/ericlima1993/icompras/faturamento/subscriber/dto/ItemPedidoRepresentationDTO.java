@@ -6,9 +6,8 @@ public record ItemPedidoRepresentationDTO(
         Long codigoProduto,
         String nome,
         Integer quantidade,
-        BigDecimal valorUnitario
+        BigDecimal valorUnitario,
+        BigDecimal total
 ) {
-    public BigDecimal getTotal() {
-        return valorUnitario.multiply(new BigDecimal(quantidade));
-    }
+
 }
