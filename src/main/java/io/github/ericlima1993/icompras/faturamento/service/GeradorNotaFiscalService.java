@@ -2,10 +2,12 @@ package io.github.ericlima1993.icompras.faturamento.service;
 
 import io.github.ericlima1993.icompras.faturamento.bucket.BucketFile;
 import io.github.ericlima1993.icompras.faturamento.model.Pedido;
+import io.github.ericlima1993.icompras.faturamento.publisher.FaturamentoPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
 
 import java.io.ByteArrayInputStream;
 
@@ -16,6 +18,7 @@ public class GeradorNotaFiscalService {
 
     private final NotaFiscalService notaFiscalService;
     private final BucketService bucketService;
+    private final FaturamentoPublisher faturamentoPublisher;
 
     public void gerar(Pedido pedido) {
         log.info("Gerando a nota fiscal do pedido: {}", pedido.codigo());
@@ -26,8 +29,14 @@ public class GeradorNotaFiscalService {
             log.info("Gerada a nota fiscal do pedido: {}, nome do arquivo: {}", pedido.codigo(), nomeArquivo);
 
             bucketService.upload(file);
-        }catch(Exception e){
-            log.error(e.getMessage(), e);
+
+            String url = bucketService.getUrl(nomeArquivo);
+            faturamentoPublisher.publicar(pedido, url);
+
+        }catch(JacksonException e){
+            log.error("Erro ao processar o json", e);
+        }catch(RuntimeException e){
+            log.error("Erro técnico ao publicar no tópico de pedidos", e);
         }
     }
 }
